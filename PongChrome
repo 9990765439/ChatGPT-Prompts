@@ -1,0 +1,164 @@
+console.clear();
+
+// Create a <canvas> element
+var canvas = document.createElement('canvas');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+canvas.style.position = 'fixed';
+canvas.style.top = '0';
+canvas.style.left = '0';
+canvas.style.zIndex = '9999';
+
+// Append the <canvas> element to the document body
+document.body.appendChild(canvas);
+
+// Get the 2D rendering context for the canvas
+var context = canvas.getContext('2d');
+
+// Set up the Pong game
+var paddleWidth = 20;
+var paddleHeight = 100;
+var paddleSpeed = 8;
+var ballSize = 20;
+var ballSpeed = 3;
+var leftPaddleY = (canvas.height - paddleHeight) / 2;
+var rightPaddleY = (canvas.height - paddleHeight) / 2;
+var ballX = canvas.width / 2;
+var ballY = canvas.height / 2;
+var ballSpeedX = ballSpeed;
+var ballSpeedY = ballSpeed;
+var leftPlayerScore = 0;
+var rightPlayerScore = 0;
+var keysPressed = {};
+
+// Function to handle keydown events
+function handleKeyDown(event) {
+  keysPressed[event.code] = true;
+
+  if (keysPressed['ArrowUp'] && rightPaddleY > 0) {
+    rightPaddleY -= paddleSpeed;
+  } else if (keysPressed['ArrowDown'] && rightPaddleY + paddleHeight < canvas.height) {
+    rightPaddleY += paddleSpeed;
+  }
+
+  if (keysPressed['KeyW'] && leftPaddleY > 0) {
+    leftPaddleY -= paddleSpeed;
+  } else if (keysPressed['KeyS'] && leftPaddleY + paddleHeight < canvas.height) {
+    leftPaddleY += paddleSpeed;
+  }
+}
+
+// Function to handle keyup events
+function handleKeyUp(event) {
+  keysPressed[event.code] = false;
+}
+
+// Add event listeners for keydown and keyup events
+document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
+
+// Function to reset the game
+function resetGame() {
+  ballX = canvas.width / 2;
+  ballY = canvas.height / 2;
+  ballSpeedX = ballSpeed;
+  ballSpeedY = ballSpeed;
+}
+
+// Update the game state and render the game
+function update() {
+  // Move the ball
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+
+  // Check for ball collision with paddles
+  if (
+    (ballX < paddleWidth && ballY + ballSize > leftPaddleY && ballY < leftPaddleY + paddleHeight) ||
+    (ballX + ballSize > canvas.width - paddleWidth && ballY + ballSize > rightPaddleY && ballY < rightPaddleY + paddleHeight)
+  ) {
+    // Adjust the ball position and reverse its horizontal direction
+    if (ballSpeedX > 0) {
+      ballX = canvas.width - paddleWidth - ballSize;
+    } else {
+      ballX = paddleWidth;
+    }
+    ballSpeedX *= -1;
+  }
+
+  // Check for ball collision with walls
+  if (ballY < 0 || ballY + ballSize > canvas.height) {
+    ballSpeedY *= -1;
+  }
+
+  // Check for scoring
+  if (ballX < 0) {
+    // Ball goes out on the left side
+    rightPlayerScore++;
+    if (rightPlayerScore === 10) {
+      alert('Right player wins!');
+      return;
+    }
+    resetGame();
+  } else if (ballX + ballSize > canvas.width) {
+    // Ball goes out on the right side
+    leftPlayerScore++;
+    if (leftPlayerScore === 10) {
+      alert('Left player wins!');
+      return;
+    }
+    resetGame();
+  }
+
+  // Clear the canvas
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Set the color theme based on the body class
+  if (document.body.classList.contains('dark-theme')) {
+    context.fillStyle = '#ffffff';
+  } else {
+    context.fillStyle = '#000000';
+  }
+
+  // Draw the paddles
+  context.fillRect(0, Math.floor(leftPaddleY), paddleWidth, paddleHeight);
+  context.fillRect(canvas.width - paddleWidth, Math.floor(rightPaddleY), paddleWidth, paddleHeight);
+
+  // Draw the ball
+  context.fillRect(Math.floor(ballX), Math.floor(ballY), ballSize, ballSize);
+
+  // Set the color theme for the scores
+  if (document.body.classList.contains('dark-theme')) {
+    context.fillStyle = '#ffffff';
+  } else {
+    context.fillStyle = '#000000';
+  }
+
+  // Draw the scores
+  context.font = '20px Arial';
+  context.textAlign = 'left';
+  context.fillText('Left: ' + leftPlayerScore, 20, 40);
+
+  context.textAlign = 'right';
+  context.fillText('Right: ' + rightPlayerScore, canvas.width - 20, 40);
+
+  // Request the next animation frame
+  requestAnimationFrame(update);
+}
+
+// Adjust the canvas size and position on window resize
+window.addEventListener('resize', function () {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// Function to toggle the color theme
+function toggleTheme() {
+  document.body.classList.toggle('dark-theme');
+  update();
+}
+
+// Toggle the theme on initial load
+toggleTheme();
+
+// Start the game loop
+update();
