@@ -20,7 +20,7 @@ var paddleWidth = 20;
 var paddleHeight = 100;
 var paddleSpeed = 8;
 var ballSize = 20;
-var ballSpeed = 3;
+var ballSpeed = 4; // Reduced ball speed
 var leftPaddleY = (canvas.height - paddleHeight) / 2;
 var rightPaddleY = (canvas.height - paddleHeight) / 2;
 var ballX = canvas.width / 2;
@@ -57,12 +57,28 @@ function handleKeyUp(event) {
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
 
-// Function to reset the game
-function resetGame() {
+// Function to reset the ball position and direction
+function resetBall() {
   ballX = canvas.width / 2;
   ballY = canvas.height / 2;
+
+  // Generate a random factor to determine the y direction (up or down)
+  var yDirectionFactor = Math.random() < 0.5 ? 1 : -1;
+
+  // Calculate the initial speed components using a 45-degree angle
   ballSpeedX = ballSpeed;
-  ballSpeedY = ballSpeed;
+  ballSpeedY = yDirectionFactor * ballSpeed;
+}
+
+// Reset the game function
+function resetGame() {
+  leftPlayerScore = 0;
+  rightPlayerScore = 0;
+  resetBall();
+
+  // Reset paddle positions
+  leftPaddleY = (canvas.height - paddleHeight) / 2;
+  rightPaddleY = (canvas.height - paddleHeight) / 2;
 }
 
 // Update the game state and render the game
@@ -96,17 +112,19 @@ function update() {
     rightPlayerScore++;
     if (rightPlayerScore === 10) {
       alert('Right player wins!');
-      return;
+      resetGame(); // Reset the game when a player wins
+    } else {
+      resetBall();
     }
-    resetGame();
   } else if (ballX + ballSize > canvas.width) {
     // Ball goes out on the right side
     leftPlayerScore++;
     if (leftPlayerScore === 10) {
       alert('Left player wins!');
-      return;
+      resetGame(); // Reset the game when a player wins
+    } else {
+      resetBall();
     }
-    resetGame();
   }
 
   // Clear the canvas
