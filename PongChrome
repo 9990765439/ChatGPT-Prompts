@@ -1,5 +1,3 @@
-console.clear();
-
 // Create a <canvas> element
 var canvas = document.createElement('canvas');
 canvas.width = window.innerWidth;
@@ -27,6 +25,12 @@ var ballX = canvas.width / 2;
 var ballY = canvas.height / 2;
 var ballSpeedX = ballSpeed;
 var ballSpeedY = ballSpeed;
+var ballFollowingCursor = false;
+var ballFollowingCursorOriginalSpeedX = 0;
+var ballFollowingCursorOriginalSpeedY = 0;
+var ballFrozen = false;
+var frozenBallX = ballX;
+var frozenBallY = ballY;
 var leftPlayerScore = 0;
 var rightPlayerScore = 0;
 var keysPressed = {};
@@ -45,6 +49,41 @@ function handleKeyDown(event) {
     leftPaddleY -= paddleSpeed;
   } else if (keysPressed['KeyS'] && leftPaddleY + paddleHeight < canvas.height) {
     leftPaddleY += paddleSpeed;
+  }
+
+  // Check for "x+1" key combination to reverse ball direction
+  if (keysPressed['KeyX'] && keysPressed['Digit1']) {
+    ballSpeedX *= -1; // Reverse the horizontal direction
+  }
+
+  // Check for "x+2" key combination to make the ball incredibly fast
+  if (keysPressed['KeyX'] && keysPressed['Digit2']) {
+    ballSpeedX *= 5; // Increase the horizontal speed
+    ballSpeedY *= 5; // Increase the vertical speed
+  }
+
+  // Check for "x+3" key combination to freeze/unfreeze the ball
+  if (keysPressed['KeyX'] && keysPressed['Digit3']) {
+    ballFrozen = !ballFrozen;
+    if (ballFrozen) {
+      frozenBallX = ballX;
+      frozenBallY = ballY;
+    }
+  }
+
+  // Check for "x+4" key combination to restart the game
+  if (keysPressed['KeyX'] && keysPressed['Digit4']) {
+    resetGame();
+  }
+
+  // Check for "x+5" key combination to make the right paddle twice as fast
+  if (keysPressed['KeyX'] && keysPressed['Digit5']) {
+    paddleSpeed = 16; // Double the paddle speed
+  }
+
+  // Check for "x+6" key combination to make the left paddle twice as fast
+  if (keysPressed['KeyX'] && keysPressed['Digit6']) {
+    paddleSpeed = 8; // Reset the paddle speed to default
   }
 }
 
@@ -83,81 +122,98 @@ function resetGame() {
 
 // Update the game state and render the game
 function update() {
-  // Move the ball
-  ballX += ballSpeedX;
-  ballY += ballSpeedY;
-
-  // Check for ball collision with paddles
-  if (
-    (ballX < paddleWidth && ballY + ballSize > leftPaddleY && ballY < leftPaddleY + paddleHeight) ||
-    (ballX + ballSize > canvas.width - paddleWidth && ballY + ballSize > rightPaddleY && ballY < rightPaddleY + paddleHeight)
-  ) {
-    // Adjust the ball position and reverse its horizontal direction
-    if (ballSpeedX > 0) {
-      ballX = canvas.width - paddleWidth - ballSize;
-    } else {
-      ballX = paddleWidth;
-    }
-    ballSpeedX *= -1;
-  }
-
-  // Check for ball collision with walls
-  if (ballY < 0 || ballY + ballSize > canvas.height) {
-    ballSpeedY *= -1;
-  }
-
-  // Check for scoring
-  if (ballX < 0) {
-    // Ball goes out on the left side
-    rightPlayerScore++;
-    if (rightPlayerScore === 10) {
-      alert('Right player wins!');
-      resetGame(); // Reset the game when a player wins
-    } else {
-      resetBall();
-    }
-  } else if (ballX + ballSize > canvas.width) {
-    // Ball goes out on the right side
-    leftPlayerScore++;
-    if (leftPlayerScore === 10) {
-      alert('Left player wins!');
-      resetGame(); // Reset the game when a player wins
-    } else {
-      resetBall();
-    }
-  }
-
-  // Clear the canvas
-  context.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Set the color theme based on the body class
-  if (document.body.classList.contains('dark-theme')) {
-    context.fillStyle = '#ffffff';
+  if (ballFrozen) {
+    // Draw the frozen ball
+    context.fillRect(Math.floor(frozenBallX), Math.floor(frozenBallY), ballSize, ballSize);
   } else {
-    context.fillStyle = '#000000';
+    if (ballFollowingCursor) {
+      // Calculate the angle and speed towards the cursor
+      var deltaX = mouseX - ballX;
+      var deltaY = mouseY - ballY;
+      var distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+      ballSpeedX = (deltaX / distance) * ballFollowingCursorOriginalSpeedX;
+      ballSpeedY = (deltaY / distance) * ballFollowingCursorOriginalSpeedY;
+
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+    } else {
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+
+      // Check for ball collision with paddles
+      if (
+        (ballX < paddleWidth && ballY + ballSize > leftPaddleY && ballY < leftPaddleY + paddleHeight) ||
+        (ballX + ballSize > canvas.width - paddleWidth && ballY + ballSize > rightPaddleY && ballY < rightPaddleY + paddleHeight)
+      ) {
+        // Adjust the ball position and reverse its horizontal direction
+        if (ballSpeedX > 0) {
+          ballX = canvas.width - paddleWidth - ballSize;
+        } else {
+          ballX = paddleWidth;
+        }
+        ballSpeedX *= -1;
+      }
+
+      // Check for ball collision with walls
+      if (ballY < 0 || ballY + ballSize > canvas.height) {
+        ballSpeedY *= -1;
+      }
+
+      // Check for scoring
+      if (ballX < 0) {
+        // Ball goes out on the left side
+        rightPlayerScore++;
+        if (rightPlayerScore === 10) {
+          alert('Right player wins!');
+          resetGame(); // Reset the game when a player wins
+        } else {
+          resetBall();
+        }
+      } else if (ballX + ballSize > canvas.width) {
+        // Ball goes out on the right side
+        leftPlayerScore++;
+        if (leftPlayerScore === 10) {
+          alert('Left player wins!');
+          resetGame(); // Reset the game when a player wins
+        } else {
+          resetBall();
+        }
+      }
+    }
+
+    // Clear the canvas
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set the color theme based on the body class
+    if (document.body.classList.contains('dark-theme')) {
+      context.fillStyle = '#ffffff';
+    } else {
+      context.fillStyle = '#000000';
+    }
+
+    // Draw the paddles
+    context.fillRect(0, Math.floor(leftPaddleY), paddleWidth, paddleHeight);
+    context.fillRect(canvas.width - paddleWidth, Math.floor(rightPaddleY), paddleWidth, paddleHeight);
+
+    // Draw the ball
+    context.fillRect(Math.floor(ballX), Math.floor(ballY), ballSize, ballSize);
+
+    // Set the color theme for the scores
+    if (document.body.classList.contains('dark-theme')) {
+      context.fillStyle = '#ffffff';
+    } else {
+      context.fillStyle = '#000000';
+    }
+
+    // Draw the scores
+    context.font = '20px Arial';
+    context.textAlign = 'left';
+    context.fillText('Left: ' + leftPlayerScore, 20, 40);
+
+    context.textAlign = 'right';
+    context.fillText('Right: ' + rightPlayerScore, canvas.width - 20, 40);
   }
-
-  // Draw the paddles
-  context.fillRect(0, Math.floor(leftPaddleY), paddleWidth, paddleHeight);
-  context.fillRect(canvas.width - paddleWidth, Math.floor(rightPaddleY), paddleWidth, paddleHeight);
-
-  // Draw the ball
-  context.fillRect(Math.floor(ballX), Math.floor(ballY), ballSize, ballSize);
-
-  // Set the color theme for the scores
-  if (document.body.classList.contains('dark-theme')) {
-    context.fillStyle = '#ffffff';
-  } else {
-    context.fillStyle = '#000000';
-  }
-
-  // Draw the scores
-  context.font = '20px Arial';
-  context.textAlign = 'left';
-  context.fillText('Left: ' + leftPlayerScore, 20, 40);
-
-  context.textAlign = 'right';
-  context.fillText('Right: ' + rightPlayerScore, canvas.width - 20, 40);
 
   // Request the next animation frame
   requestAnimationFrame(update);
@@ -167,6 +223,16 @@ function update() {
 window.addEventListener('resize', function () {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
+});
+
+// Store mouse coordinates
+var mouseX = 0;
+var mouseY = 0;
+
+// Update mouse coordinates on mousemove
+document.addEventListener('mousemove', function(event) {
+  mouseX = event.clientX;
+  mouseY = event.clientY;
 });
 
 // Function to toggle the color theme
