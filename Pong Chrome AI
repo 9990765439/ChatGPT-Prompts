@@ -1,0 +1,164 @@
+// Create a <canvas> element
+var canvas = document.createElement('canvas');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+canvas.style.position = 'fixed';
+canvas.style.top = '0';
+canvas.style.left = '0';
+canvas.style.zIndex = '9999';
+
+// Append the <canvas> element to the document body
+document.body.appendChild(canvas);
+
+// Get the 2D rendering context for the canvas
+var context = canvas.getContext('2d');
+
+// Set up the Pong game
+var paddleWidth = 20;
+var paddleHeight = 100;
+var paddleSpeed = 8;
+var ballSize = 20;
+var ballSpeed = 4; // Reduced ball speed
+var leftPaddleY = (canvas.height - paddleHeight) / 2;
+var rightPaddleY = (canvas.height - paddleHeight) / 2;
+var ballX = canvas.width / 2;
+var ballY = canvas.height / 2;
+var ballSpeedX = ballSpeed;
+var ballSpeedY = ballSpeed;
+var ballFollowingCursor = false;
+var ballFollowingCursorOriginalSpeedX = 0;
+var ballFollowingCursorOriginalSpeedY = 0;
+var ballFrozen = false;
+var frozenBallX = ballX;
+var frozenBallY = ballY;
+var leftPlayerScore = 0;
+var rightPlayerScore = 0;
+var keysPressed = {};
+
+// Function to handle keydown events
+function handleKeyDown(event) {
+  keysPressed[event.code] = true;
+
+  if (keysPressed['ArrowUp'] && rightPaddleY > 0) {
+    rightPaddleY -= paddleSpeed;
+  } else if (keysPressed['ArrowDown'] && rightPaddleY + paddleHeight < canvas.height) {
+    rightPaddleY += paddleSpeed;
+  }
+
+  if (keysPressed['KeyW'] && leftPaddleY > 0) {
+    leftPaddleY -= paddleSpeed;
+  } else if (keysPressed['KeyS'] && leftPaddleY + paddleHeight < canvas.height) {
+    leftPaddleY += paddleSpeed;
+  }
+
+  // Check for "x+1" key combination to reverse ball direction
+  if (keysPressed['KeyX'] && keysPressed['Digit1']) {
+    ballSpeedX *= -1; // Reverse the horizontal direction
+  }
+
+  // Check for "x+2" key combination to make the ball incredibly fast
+  if (keysPressed['KeyX'] && keysPressed['Digit2']) {
+    ballSpeedX *= 5; // Increase the horizontal speed
+    ballSpeedY *= 5; // Increase the vertical speed
+  }
+
+  // Check for "x+3" key combination to freeze/unfreeze the ball
+  if (keysPressed['KeyX'] && keysPressed['Digit3']) {
+    ballFrozen = !ballFrozen;
+    if (ballFrozen) {
+      frozenBallX = ballX;
+      frozenBallY = ballY;
+    }
+  }
+
+  // Check for "x+4" key combination to restart the game
+  if (keysPressed['KeyX'] && keysPressed['Digit4']) {
+    resetGame();
+  }
+
+  // Check for "x+5" key combination to make the right paddle twice as fast
+  if (keysPressed['KeyX'] && keysPressed['Digit5']) {
+    paddleSpeed = 16; // Double the paddle speed
+  }
+
+  // Check for "x+6" key combination to make the left paddle twice as fast
+  if (keysPressed['KeyX'] && keysPressed['Digit6']) {
+    paddleSpeed = 8; // Reset the paddle speed to default
+  }
+}
+
+// Function to handle keyup events
+function handleKeyUp(event) {
+  keysPressed[event.code] = false;
+}
+
+// Add event listeners for keydown and keyup events
+document.addEventListener('keydown', handleKeyDown);
+document.addEventListener('keyup', handleKeyUp);
+
+// Function to reset the ball position and direction
+function resetBall() {
+  ballX = canvas.width / 2;
+  ballY = canvas.height / 2;
+
+  // Generate a random factor to determine the y direction (up or down)
+  var yDirectionFactor = Math.random() < 0.5 ? 1 : -1;
+
+  // Calculate the initial speed components using a 45-degree angle
+  ballSpeedX = ballSpeed;
+  ballSpeedY = yDirectionFactor * ballSpeed;
+}
+
+// Reset the game function
+function resetGame() {
+  leftPlayerScore = 0;
+  rightPlayerScore = 0;
+  resetBall();
+
+  // Reset paddle positions
+  leftPaddleY = (canvas.height - paddleHeight) / 2;
+  rightPaddleY = (canvas.height - paddleHeight) / 2;
+}
+
+// Update the game state and render the game
+function update() {
+  // Adjust the right paddle's position based on the ball's Y-coordinate
+  if (rightPaddleY + paddleHeight / 2 < ballY && rightPaddleY + paddleHeight < canvas.height) {
+    rightPaddleY += paddleSpeed;
+  } else if (rightPaddleY + paddleHeight / 2 > ballY && rightPaddleY > 0) {
+    rightPaddleY -= paddleSpeed;
+  }
+
+  // ... (remaining code)
+
+  // Request the next animation frame
+  requestAnimationFrame(update);
+}
+
+// Adjust the canvas size and position on window resize
+window.addEventListener('resize', function () {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// Store mouse coordinates
+var mouseX = 0;
+var mouseY = 0;
+
+// Update mouse coordinates on mousemove
+document.addEventListener('mousemove', function(event) {
+  mouseX = event.clientX;
+  mouseY = event.clientY;
+});
+
+// Function to toggle the color theme
+function toggleTheme() {
+  document.body.classList.toggle('dark-theme');
+  update();
+}
+
+// Toggle the theme on initial load
+toggleTheme();
+
+// Start the game loop
+update();
